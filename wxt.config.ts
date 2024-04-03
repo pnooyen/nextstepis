@@ -14,8 +14,9 @@ export default defineConfig({
     ],
   }),
   manifest: {
+    version: "0.0.1",
     name: "nextstepis",
-    permissions: ["storage", "tabs", "sidePanel"],
+    permissions: ["contextMenus", "storage", "tabs", "sidePanel"],
     host_permissions: ["<all_urls>"],
     web_accessible_resources: [
       {

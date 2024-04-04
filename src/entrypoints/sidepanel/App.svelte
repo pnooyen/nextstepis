@@ -21,7 +21,7 @@
   onMount(async () => {
     const applicationState = await storage.getItem("local:applicationState");
     appState = applicationState
-    console.log(appState)
+    console.log('onMount',appState)
     // appState.state = "IDLE"
     // appState.state = "IDLE";
   });
@@ -67,7 +67,7 @@
   // });
 </script>
 
-<!-- {appState?.state} -->
+{appState?.state}
 <div class="flex flex-col items-center justify-center p-4 bg-gray-100 h-full">
   <button
     class="{appState?.state === "RECORDING"

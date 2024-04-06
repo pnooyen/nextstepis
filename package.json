@@ -25,5 +25,10 @@
     "tslib": "^2.6.2",
     "typescript": "^5.3.3",
     "wxt": "^0.17.0"
+  },
+  "dependencies": {
+    "@types/uuid": "^9.0.8",
+    "dayjs": "^1.11.10",
+    "uuid": "^9.0.1"
   }
 }

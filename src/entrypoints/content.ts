@@ -1,17 +1,54 @@
 export default defineContentScript({
-  matches: ["https://*/*"],
-  async main() {
+  matches: ["<all_urls>"],
+  main() {
+    // console.log('defineContentScript', 'YAY')
+    // document.addEventListener("mouseover", highlightElement);
+    // document.addEventListener("mouseout", removeHighlight);
 
-    const applicationState = await storage.getItem("local:applicationState");
-    // appState = applicationState
-    console.log('defineContentScript',applicationState)
-
-    const unwatchaAplicationState = storage.watch<any>(
-      "local:applicationState",
-      (newState, oldState) => {
-        console.log('defineContentScript', newState)
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+      console.log("defineContentScript", message);
+      if (message.action === "startRecording") {
+        document.addEventListener("mouseover", highlightElement);
+        document.addEventListener("mouseout", removeHighlight);
+        document.addEventListener("click", recordingOnClick, true);
+      } else if (message.action === "stopRecording") {
+        document.removeEventListener("mouseover", highlightElement);
+        document.removeEventListener("mouseout", removeHighlight);
+        document.removeEventListener("click", recordingOnClick, true);
       }
-    );
+      return false; // For asynchronous use of sendResponse()
+    });
+
+    // const applicationState = await storage.getItem("local:state");
+    // appState = applicationState
+    // console.log("defineContentScript", applicationState);
+
+    // const unwatchState = storage.watch<any>(
+    //   "local:state",
+    //   (newState, oldState) => {
+    //     // console.log("storage.watch", newState);
+    //     // handleRecording(newState);
+
+    //     if (newState.state === "RECORDING") {
+    //       document.addEventListener("mouseover", highlightElement);
+    //       document.addEventListener("mouseout", removeHighlight);
+    //     } else {
+    //       document.removeEventListener("mouseover", highlightElement);
+    //       document.removeEventListener("mouseout", removeHighlight);
+    //     }
+    //   }
+    // );
+
+    // handle RECORDING state
+    // function handleRecording(appState) {
+    //   if (appState.state === "RECORDING") {
+    //     document.addEventListener("mouseover", highlightElement);
+    //     document.addEventListener("mouseout", removeHighlight);
+    //   } else {
+    //     document.removeEventListener("mouseover", highlightElement);
+    //     document.removeEventListener("mouseout", removeHighlight);
+    //   }
+    // }
 
     // console.log("Hello content.");
 
@@ -36,17 +73,40 @@ export default defineContentScript({
     //   }
     // });
 
-    // // Function to add highlight styling to elements
-    // function highlightElement(event: MouseEvent) {
-    //   const target = event.target as HTMLElement;
-    //   target.style.border = "2px solid red";
-    // }
+    function recordingOnClick() {
+      chrome.runtime.sendMessage({ action: "captureScreen" });
+    }
 
-    // // Function to remove highlight styling from elements
-    // function removeHighlight(event: MouseEvent) {
-    //   const target = event.target as HTMLElement;
-    //   target.style.border = "";
-    // }
+    // Function to add highlight styling to elements
+    function highlightElement(event: MouseEvent) {
+      event.stopPropagation(); // Prevent any further event propagation
+
+      // Start with the original event target
+      let target = event.target as HTMLElement;
+
+      // Keep moving up the DOM tree until you find the parent div
+      while (target !== null && target.nodeName !== "DIV") {
+        target = target.parentElement as HTMLElement;
+      }
+
+      // If a parent div was found...
+      if (target !== null) {
+        // Remove borders from all divs first if you want to highlight one at a time
+        const allDivs = document.querySelectorAll("div");
+        for (let i = 0; i < allDivs.length; i++) {
+          allDivs[i].style.border = ""; // Remove the border
+        }
+
+        // Then apply the border to the found div
+        target.style.border = "2px solid red";
+      }
+    }
+
+    // Function to remove highlight styling from elements
+    function removeHighlight(event: MouseEvent) {
+      const target = event.target as HTMLElement;
+      target.style.border = "";
+    }
 
     //   function sendToPopup(message) {
     //     chrome.runtime.sendMessage({log: message});
@@ -69,28 +129,35 @@ export default defineContentScript({
 
     //     return '/' + path.join('/');
     // }
-    //   let currentElement = null;
 
-    //   document.addEventListener('mouseover', function (e) {
+    // let currentElement = null;
+
+    // document.addEventListener(
+    //   "mouseover",
+    //   function (e) {
     //     // Remove highlight from the previously hovered element
     //     if (currentElement) {
-    //       currentElement.style.outline = '';
+    //       currentElement.style.outline = "";
     //     }
 
     //     // Highlight the new element and log its selector
     //     currentElement = e.target;
-    //     currentElement.style.outline = '2px solid red';
+    //     currentElement.style.outline = "2px solid red";
     //     var selector = getFullXPath(e.target);
-    //     console.log(selector);
-    //     sendToPopup(selector);
-    //   }, false);
+    //   },
+    //   false
+    // );
 
-    //   document.addEventListener('mouseout', function (e) {
+    // document.addEventListener(
+    //   "mouseout",
+    //   function (e) {
     //     // Optionally, remove the highlight when the mouse leaves the element
     //     if (currentElement === e.target) {
-    //       currentElement.style.outline = '';
+    //       currentElement.style.outline = "";
     //       currentElement = null;
     //     }
-    //   }, false);
+    //   },
+    //   false
+    // );
   },
 });

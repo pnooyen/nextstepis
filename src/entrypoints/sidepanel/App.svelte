@@ -5,12 +5,39 @@
   // let lRecordingStep = [];
   // let lUserPreferences = {};
 
-  let appState: any = {};
+  // let appState: any = {};
+  let currentState = "IDLE"; // Default state
+  let currentWorkflow = {};
 
-  const unwatchaAplicationState = storage.watch<any>(
-    "local:applicationState",
+  const handleStartRecording = () => {
+    chrome.runtime.sendMessage({ action: "startRecording" }, (response) => {
+      console.log("State updated to:", response.state);
+    });
+  };
+
+  const handleStopRecording = () => {
+    chrome.runtime.sendMessage({ action: "stopRecording" }, (response) => {
+      console.log("State updated to:", response.state);
+    });
+  };
+
+  const unwatchState = storage.watch<any>(
+    "local:state",
     (newState, oldState) => {
-      appState = newState;
+      currentState = newState?.state;
+      // appState = newState;
+      // console.log(newState);
+      // lAppState = newState?.appState || "IDLE";
+      // lRecordingStep = newState?.recordingStep || [];
+      // lUserPreferences = newState?.userPreferences || {};
+    }
+  );
+
+  const unwatchWorkflow = storage.watch<any>(
+    "local:workflow",
+    (newState, oldState) => {
+      currentWorkflow = newState?.workflow;
+      // appState = newState;
       // console.log(newState);
       // lAppState = newState?.appState || "IDLE";
       // lRecordingStep = newState?.recordingStep || [];
@@ -19,29 +46,34 @@
   );
 
   onMount(async () => {
-    const applicationState = await storage.getItem("local:applicationState");
-    appState = applicationState
-    console.log('onMount',appState)
+    const response = await chrome.runtime.sendMessage({ action: "queryState" });
+    currentState = response.state;
+    currentWorkflow = response.workflow;
+    // const applicationState = await storage.getItem("local:state");
+    // appState = applicationState
+    // console.log('onMount',appState)
     // appState.state = "IDLE"
     // appState.state = "IDLE";
   });
 
-  onDestroy(async () => {
-    // unwatchaAplicationState();
-  });
+  // onDestroy(async () => {
+  //   // unwatchState();
+  // });
 
-  async function toggleCapture() {
-    // capturing.update((n) => !n); // Toggle the state
-    // You still need to send a message to the background script to update other parts of the extension
-    if(appState?.state === 'IDLE'){
-      await storage.setItem("local:applicationState", { state: "RECORDING" });
-      // call start recording
-    }else{
-      await storage.setItem("local:applicationState", { state: "IDLE" });
-      // call end recording
-    }
-    // chrome.runtime.sendMessage({ action: "toggleCapturing" });
-  }
+  // async function toggleCapture() {
+  //   console.time("ExecutionTime");
+  //   // capturing.update((n) => !n); // Toggle the state
+  //   // You still need to send a message to the background script to update other parts of the extension
+  //   if(appState?.state === 'IDLE'){
+  //     await storage.setItem("local:state", { state: "RECORDING" });
+  //     // call start recording
+  //   }else{
+  //     await storage.setItem("local:state", { state: "IDLE" });
+  //     // call end recording
+  //   }
+  //   console.timeEnd("ExecutionTime");
+  //   // chrome.runtime.sendMessage({ action: "toggleCapturing" });
+  // }
 
   // onMount(async () => {
   //   document
@@ -67,17 +99,41 @@
   // });
 </script>
 
-{appState?.state}
+<!-- {currentState}
+{JSON.stringify(currentWorkflow)} -->
 <div class="flex flex-col items-center justify-center p-4 bg-gray-100 h-full">
   <button
-    class="{appState?.state === "RECORDING"
+    class="{currentState === 'RECORDING'
       ? 'bg-red-500 hover:bg-red-700'
       : 'bg-blue-500 hover:bg-blue-700'} px-4 py-2 text-white font-bold rounded transition duration-150 ease-in-out"
-    on:click={toggleCapture}
+    on:click={currentState === "RECORDING"
+      ? handleStopRecording
+      : handleStartRecording}
   >
-    {appState?.state === "RECORDING" ? "End Capture" : "Start Capture"}
+    {currentState === "RECORDING" ? "End Capture" : "Start Capture"}
   </button>
   <!-- <p class="mt-4 text-lg">{lAppState ? "Capturing..." : "Idle"}</p> -->
+</div>
+
+<div>
+  {#if currentWorkflow && currentWorkflow?.contentBlocks && currentWorkflow?.contentBlocks.length > 0}
+  <div>
+    {#each currentWorkflow?.contentBlocks as block}
+      {#each block as {screenshot}}
+        {#if screenshot.url}
+          <!-- Display each screenshot using an img tag with a base64 source -->
+          <img src="{screenshot.url}" alt="Screenshot" />
+        {:else}
+          <!-- Fallback in case there's no screenshot.url -->
+          <p>No screenshot available</p>
+        {/if}
+      {/each}
+    {/each}
+  </div>
+{:else}
+  <!-- Fallback in case contentBlocks is not available yet -->
+  <p>Loading contentBlocks or no content available...</p>
+{/if}
 </div>
 
 <!-- <main>
